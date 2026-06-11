@@ -170,6 +170,7 @@ export default function AppBiobank() {
             setShipments={setShipments} 
             loggedInLabId={loggedInLabId}
             setLoggedInLabId={setLoggedInLabId}
+            setCurrentView={setCurrentView}
           />
         );
       case 'tracker':

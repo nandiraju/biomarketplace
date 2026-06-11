@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { MOCK_LABS, MOCK_INVENTORIES } from '../data/mockData';
 import { Database, Layers, CheckCircle2, ChevronRight, Activity, FlaskConical, List, Table, Hash, Clipboard, ArrowUpDown, User, Dna, Thermometer } from 'lucide-react';
 
-export default function LabILIMS({ requests, setRequests, shipments, setShipments, loggedInLabId, setLoggedInLabId }) {
+export default function LabILIMS({ requests, setRequests, shipments, setShipments, loggedInLabId, setLoggedInLabId, setCurrentView }) {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [selectedSampleIds, setSelectedSampleIds] = useState([]);
+  const [selectedSampleIdsForQuote, setSelectedSampleIdsForQuote] = useState([]);
   const [viewMode, setViewMode] = useState('table');
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState('asc');
@@ -96,11 +97,16 @@ export default function LabILIMS({ requests, setRequests, shipments, setShipment
   const handleEstimateSubmit = (req, e) => {
     e.preventDefault();
     if (!priceQuote) return;
+    if (selectedSampleIdsForQuote.length === 0) {
+      alert('Please select at least one physical specimen from your LIMS inventory to allocate for this quote.');
+      return;
+    }
 
     const newEstimate = {
       labId: loggedInLabId,
       price: Number(priceQuote),
-      samplesCount: Number(samplesQuote || req.targetQuantity),
+      samplesCount: Number(selectedSampleIdsForQuote.length),
+      sampleIds: selectedSampleIdsForQuote,
       notes: notesQuote
     };
 
@@ -120,6 +126,7 @@ export default function LabILIMS({ requests, setRequests, shipments, setShipment
     setRequests(updatedRequests);
     setPriceQuote('');
     setNotesQuote('');
+    setSelectedSampleIdsForQuote([]);
     setSelectedRequest(null);
     alert('Quote submitted successfully to researcher.');
   };
@@ -519,12 +526,69 @@ export default function LabILIMS({ requests, setRequests, shipments, setShipment
                         <input 
                           type="number" 
                           className="form-input" 
-                          min="1" 
-                          max={selectedRequest.targetQuantity}
-                          value={samplesQuote} 
-                          onChange={(e) => setSamplesQuote(e.target.value)} 
+                          value={selectedSampleIdsForQuote.length} 
+                          disabled
                           required 
                         />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: 'var(--text-secondary)', fontWeight: '600' }}>
+                        Select Matching Specimens from LIMS to Allocate
+                      </label>
+                      <div className="inventory-grid" style={{ maxHeight: '160px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                        {getMatchesForRequest(selectedRequest).map((sample) => {
+                          const isChecked = selectedSampleIdsForQuote.includes(sample.id);
+                          const isAllocated = requests.some(r => r.fulfilledSamples.some(s => s.id === sample.id));
+
+                          return (
+                            <div
+                              key={sample.id}
+                              className={`sample-row ${isChecked ? 'matching' : ''}`}
+                              style={{ 
+                                opacity: isAllocated ? 0.5 : 1, 
+                                cursor: isAllocated ? 'not-allowed' : 'pointer',
+                                display: 'grid',
+                                gridTemplateColumns: 'auto 1.2fr 1fr 1fr 1fr',
+                                padding: '6px 8px',
+                                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                                fontSize: '11.5px',
+                                alignItems: 'center'
+                              }}
+                              onClick={() => {
+                                if (isAllocated) return;
+                                if (isChecked) {
+                                  setSelectedSampleIdsForQuote(selectedSampleIdsForQuote.filter(id => id !== sample.id));
+                                } else {
+                                  setSelectedSampleIdsForQuote([...selectedSampleIdsForQuote, sample.id]);
+                                }
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                disabled={isAllocated}
+                                readOnly
+                                style={{ marginRight: '8px', cursor: 'pointer' }}
+                              />
+                              <div>
+                                <strong style={{ color: 'var(--text-primary)' }}>{sample.id}</strong>
+                                <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>RIN: {sample.rinScore}</div>
+                              </div>
+                              <div>{sample.gender} • {sample.age}y</div>
+                              <div>{sample.tissueType.split(' ')[0]}</div>
+                              <div style={{ color: isAllocated ? 'var(--accent-rose)' : 'var(--accent-emerald)', fontWeight: '600', fontSize: '10px' }}>
+                                {isAllocated ? 'Allocated' : 'Available'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {getMatchesForRequest(selectedRequest).length === 0 && (
+                          <div style={{ textAlign: 'center', padding: '10px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                            No matching samples in inventory for this criteria.
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -540,7 +604,7 @@ export default function LabILIMS({ requests, setRequests, shipments, setShipment
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                      <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSelectedRequest(null)}>
+                      <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setSelectedRequest(null); setSelectedSampleIdsForQuote([]); }}>
                         Cancel
                       </button>
                       <button type="submit" className="btn btn-primary" style={{ flex: 2 }}>
@@ -550,10 +614,10 @@ export default function LabILIMS({ requests, setRequests, shipments, setShipment
                   </form>
                 </div>
               ) : (
-                /* Specimen Allocation View (when Paid & Processing) */
+                /* Fulfillment Summary View */
                 <div>
                   <div style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '16px', marginBottom: '16px' }}>
-                    <div style={{ fontSize: '11px', color: 'var(--accent-emerald)', fontWeight: 'bold' }}>Fulfilling Paid Inquiry</div>
+                    <div style={{ fontSize: '11px', color: 'var(--accent-emerald)', fontWeight: 'bold' }}>Fulfillment & Dispatch Info</div>
                     <h4 style={{ fontSize: '14px', marginTop: '4px' }}>{selectedRequest.title}</h4>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                       Contract Price: ${selectedRequest.budget.toLocaleString()} • Target Qty: {selectedRequest.targetQuantity}
@@ -561,63 +625,62 @@ export default function LabILIMS({ requests, setRequests, shipments, setShipment
                   </div>
 
                   <h4 style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px' }}>
-                    Select Local Matching Samples
+                    Allocated Specimens & Tracking
                   </h4>
 
                   <div className="inventory-grid">
-                    {getMatchesForRequest(selectedRequest).map((sample) => {
-                      const isChecked = selectedSampleIds.includes(sample.id);
-                      const isAllocated = requests.some(r => r.fulfilledSamples.some(s => s.id === sample.id));
-
+                    {selectedRequest.fulfilledSamples.map((sample) => {
+                      const associatedShipment = shipments.find(s => s.sampleId === sample.id);
                       return (
                         <div
                           key={sample.id}
-                          className={`sample-row ${isChecked ? 'matching' : ''}`}
+                          className="sample-row matching"
                           style={{ 
-                            opacity: isAllocated ? 0.5 : 1, 
-                            cursor: isAllocated ? 'not-allowed' : 'pointer',
-                            gridTemplateColumns: 'auto 1fr 1fr 1fr 1fr'
+                            gridTemplateColumns: '1.2fr 1fr 1.2fr 1.5fr',
+                            alignItems: 'center',
+                            padding: '10px 12px',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            fontSize: '12px'
                           }}
-                          onClick={() => !isAllocated && handleSelectSample(sample.id)}
                         >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            disabled={isAllocated}
-                            onChange={() => {}}
-                            style={{ marginRight: '10px', cursor: 'pointer' }}
-                          />
                           <div>
                             <strong style={{ color: 'var(--text-primary)' }}>{sample.id}</strong>
                             <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>QC RIN: {sample.rinScore}</div>
                           </div>
                           <div>{sample.gender} • {sample.age}y</div>
                           <div>{sample.tissueType.split(' ')[0]}</div>
-                          <div style={{ color: isAllocated ? 'var(--accent-rose)' : 'var(--accent-emerald)', fontWeight: '600', fontSize: '11px' }}>
-                            {isAllocated ? 'Allocated' : 'Available'}
+                          <div style={{ textAlign: 'right' }}>
+                            {associatedShipment ? (
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                style={{ 
+                                  padding: '4px 8px', 
+                                  fontSize: '10px', 
+                                  minHeight: 'auto',
+                                  background: 'rgba(79, 172, 254, 0.1)',
+                                  border: '1px solid var(--accent-indigo)',
+                                  color: 'var(--accent-indigo)',
+                                  borderRadius: '6px'
+                                }}
+                                onClick={() => {
+                                  setCurrentView && setCurrentView('tracker');
+                                }}
+                              >
+                                Trace Shipment
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No shipment record</span>
+                            )}
                           </div>
                         </div>
                       );
                     })}
-
-                    {getMatchesForRequest(selectedRequest).length === 0 && (
-                      <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                        No matching samples found for this request in {selectedLab.code} inventory.
-                      </div>
-                    )}
                   </div>
 
                   <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
                     <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSelectedRequest(null)}>
-                      Back
-                    </button>
-                    <button
-                      className={`btn ${selectedSampleIds.length > 0 ? 'btn-emerald' : 'btn-disabled'}`}
-                      style={{ flex: 2 }}
-                      disabled={selectedSampleIds.length === 0}
-                      onClick={() => handleFulfill(selectedRequest)}
-                    >
-                      Allocate & Ship ({selectedSampleIds.length})
+                      Back to Dashboard
                     </button>
                   </div>
                 </div>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { FILTER_OPTIONS } from '../data/mockData';
+import { FILTER_OPTIONS, MOCK_INVENTORIES } from '../data/mockData';
 import { Plus, Search, FileText, CheckCircle2, ShieldCheck, DollarSign, List, Table, ArrowUpDown, Hash, Clipboard, Calendar, Dna, User, Globe, Layers, Activity, X } from 'lucide-react';
 
-export default function ResearcherDashboard({ requests, setRequests, sandboxFunds, setSandboxFunds, labEarnings, setLabEarnings }) {
+export default function ResearcherDashboard({ requests, setRequests, sandboxFunds, setSandboxFunds, labEarnings, setLabEarnings, shipments, setShipments }) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [targetQuantity, setTargetQuantity] = useState(5);
@@ -62,21 +62,87 @@ export default function ResearcherDashboard({ requests, setRequests, sandboxFund
       [estimate.labId]: (labEarnings[estimate.labId] || 0) + estimate.price
     });
 
+    const activeLabInventory = MOCK_INVENTORIES[estimate.labId] || [];
+    
+    // Create the request's fulfilled samples array
+    const fulfilledSamples = (estimate.sampleIds || []).map((id) => {
+      const sample = activeLabInventory.find((s) => s.id === id) || {
+        id: id,
+        gender: 'Female',
+        age: 45,
+        cancerType: 'Breast Cancer',
+        cancerStage: 'Stage III',
+        demography: 'African American',
+        tissueType: 'Fresh Frozen (FF)',
+        rinScore: 8.2
+      };
+      
+      return {
+        id: sample.id,
+        labId: estimate.labId,
+        gender: sample.gender,
+        age: sample.age,
+        cancerType: sample.cancerType,
+        cancerStage: sample.cancerStage,
+        demography: sample.demography,
+        tissueType: sample.tissueType,
+        rinScore: sample.rinScore,
+        collectedDate: new Date().toISOString().split('T')[0],
+        shipmentId: `SHIP-${Date.now().toString().slice(-3)}-${sample.id.split('-').pop()}`
+      };
+    });
+
     // Update requests state
+    const targetRequest = requests.find(r => r.id === requestId);
     setRequests(
       requests.map((req) => {
         if (req.id === requestId) {
+          const isFullyFulfilled = fulfilledSamples.length >= req.targetQuantity;
           return {
             ...req,
-            status: 'Paid & Processing',
+            status: isFullyFulfilled ? 'Fully Fulfilled' : 'Paid & Processing',
             paymentStatus: 'Paid',
             selectedLabId: estimate.labId,
-            budget: estimate.price // agreed price
+            budget: estimate.price, // agreed price
+            fulfilledSamples: fulfilledSamples
           };
         }
         return req;
       })
     );
+
+    // Create automatic iTracker shipments
+    const labCode = estimate.labId === 'dana-farber' ? 'DFCI' : estimate.labId === 'md-anderson' ? 'MDAB' : 'MCTH';
+    const newShipments = fulfilledSamples.map((sample) => {
+      return {
+        id: sample.shipmentId,
+        requestId: requestId,
+        requestTitle: targetRequest?.title || 'Cohort Specimen',
+        sampleId: sample.id,
+        labId: estimate.labId,
+        carrier: 'BioExpress Logistics',
+        trackingNumber: `BIO-${labCode}-${Date.now().toString().slice(-4)}-${sample.id.split('-').pop()}`,
+        steps: [
+          { name: 'Request Assigned', status: 'completed', date: new Date().toISOString().replace('T', ' ').slice(0, 16) },
+          { name: 'Sample Collection & Barcoding', status: 'completed', date: new Date().toISOString().replace('T', ' ').slice(0, 16) },
+          { name: 'LIMS Quality Control (RIN > 7.0)', status: 'completed', date: new Date().toISOString().replace('T', ' ').slice(0, 16) },
+          { name: 'Dry Ice Pack & Ready', status: 'current', date: new Date().toISOString().replace('T', ' ').slice(0, 16) },
+          { name: 'Carrier Dispatch', status: 'pending', date: null },
+          { name: 'In Transit (Cold-Chain Active)', status: 'pending', date: null },
+          { name: 'Delivered & Confirmed', status: 'pending', date: null }
+        ],
+        currentStepIndex: 3,
+        tempMonitoring: [
+          { time: '14:00', temp: -78.5 },
+          { time: '15:00', temp: -79.2 },
+          { time: '16:00', temp: -78.9 }
+        ],
+        lat: 42.3601,
+        lng: -71.0589
+      };
+    });
+
+    setShipments([...newShipments, ...shipments]);
 
     setSelectedRequestForEstimates(null);
     alert(`Success! Direct payment of $${estimate.price.toLocaleString()} transferred to the biobank.`);
@@ -613,6 +679,20 @@ export default function ResearcherDashboard({ requests, setRequests, sandboxFund
                           <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', display: 'block', marginTop: '4px' }}>
                             "{estimate.notes}"
                           </span>
+                        )}
+                        {estimate.sampleIds && estimate.sampleIds.length > 0 && (
+                          <div style={{ marginTop: '8px' }}>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>
+                              Proposed Specimen Codes:
+                            </span>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                              {estimate.sampleIds.map(id => (
+                                <code key={id} style={{ fontSize: '10px', background: 'rgba(0, 242, 254, 0.08)', border: '1px solid rgba(0, 242, 254, 0.2)', padding: '2px 6px', borderRadius: '4px', color: 'var(--accent-teal)' }}>
+                                  {id}
+                                </code>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
                       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>

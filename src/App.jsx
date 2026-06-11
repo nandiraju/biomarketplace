@@ -169,6 +169,8 @@ export default function App() {
             setSandboxFunds={setSandboxFunds}
             labEarnings={labEarnings}
             setLabEarnings={setLabEarnings}
+            shipments={shipments}
+            setShipments={setShipments}
           />
         );
       case 'tracker':
@@ -196,6 +198,8 @@ export default function App() {
             setSandboxFunds={setSandboxFunds}
             labEarnings={labEarnings}
             setLabEarnings={setLabEarnings}
+            shipments={shipments}
+            setShipments={setShipments}
           />
         );
     }
