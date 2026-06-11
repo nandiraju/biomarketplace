@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import LandingPage from './components/LandingPage';
 import ResearcherLandingPage from './components/ResearcherLandingPage';
 import BiobankLandingPage from './components/BiobankLandingPage';
+import BiobankLogin from './components/BiobankLogin';
 import ResearcherDashboard from './components/ResearcherDashboard';
 import LabILIMS from './components/LabILIMS';
 import LogisticsITracker from './components/LogisticsITracker';
@@ -11,6 +12,7 @@ import { INITIAL_REQUESTS, INITIAL_SHIPMENTS } from './data/mockData';
 import { HelpCircle, Network, Layers, ShieldCheck } from 'lucide-react';
 
 export default function App() {
+  const [role, setRole] = useState(null); // 'researcher' | 'biobank' | null
   const [currentView, setCurrentView] = useState('landing');
   const [requests, setRequests] = useState(INITIAL_REQUESTS);
   const [shipments, setShipments] = useState(INITIAL_SHIPMENTS);
@@ -25,8 +27,14 @@ export default function App() {
   if (currentView === 'landing') {
     return (
       <LandingPage 
-        onSelectResearcher={() => setCurrentView('researcher_landing')} 
-        onSelectBiobank={() => setCurrentView('biobank_landing')} 
+        onSelectResearcher={() => {
+          setRole('researcher');
+          setCurrentView('researcher_landing');
+        }} 
+        onSelectBiobank={() => {
+          setRole('biobank');
+          setCurrentView('biobank_landing');
+        }} 
       />
     );
   }
@@ -35,7 +43,10 @@ export default function App() {
     return (
       <ResearcherLandingPage 
         onStart={() => setCurrentView('researcher')} 
-        onBackToGateway={() => setCurrentView('landing')} 
+        onBackToGateway={() => {
+          setRole(null);
+          setCurrentView('landing');
+        }} 
       />
     );
   }
@@ -44,7 +55,26 @@ export default function App() {
     return (
       <BiobankLandingPage 
         onStart={() => setCurrentView('lab')} 
-        onBackToGateway={() => setCurrentView('landing')} 
+        onBackToGateway={() => {
+          setRole(null);
+          setCurrentView('landing');
+        }} 
+      />
+    );
+  }
+
+  // Standalone full-screen login for biobank node coordinators before entering LIMS
+  if (role === 'biobank' && !loggedInLabId) {
+    return (
+      <BiobankLogin 
+        onLogin={(labId) => {
+          setLoggedInLabId(labId);
+          setCurrentView('lab');
+        }}
+        onBackToGateway={() => {
+          setRole(null);
+          setCurrentView('landing');
+        }}
       />
     );
   }
@@ -135,6 +165,8 @@ export default function App() {
         setCurrentView={setCurrentView} 
         loggedInLabId={loggedInLabId}
         setLoggedInLabId={setLoggedInLabId}
+        role={role}
+        setRole={setRole}
       />
 
       <main className="main-content">

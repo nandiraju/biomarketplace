@@ -9,8 +9,7 @@ export default function LabILIMS({ requests, setRequests, shipments, setShipment
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState('asc');
   const [subView, setSubView] = useState('estimates'); // 'estimates' or 'active-requests'
-  const [loginFormLabId, setLoginFormLabId] = useState('dana-farber');
-  const [loginPassword, setLoginPassword] = useState('');
+
 
   // Submit Quote form states
   const [priceQuote, setPriceQuote] = useState('');
@@ -208,57 +207,7 @@ export default function LabILIMS({ requests, setRequests, shipments, setShipment
     }
   };
 
-  if (!loggedInLabId) {
-    const handleLogin = (e) => {
-      e.preventDefault();
-      setLoggedInLabId(loginFormLabId);
-      setLoginPassword('');
-    };
 
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', fontFamily: "'Poppins', sans-serif" }}>
-        <form onSubmit={handleLogin} className="glass-panel" style={{ padding: '40px', width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '32px' }}>🔑</span>
-            <h2 style={{ fontSize: '20px', marginTop: '10px', color: 'var(--text-primary)' }}>Biobank Coordinator Login</h2>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>Access your clinical LIMS repository node</p>
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">Select Biobank Core</label>
-            <select 
-              className="form-select" 
-              value={loginFormLabId}
-              onChange={(e) => setLoginFormLabId(e.target.value)}
-            >
-              {MOCK_LABS.map(lab => (
-                <option key={lab.id} value={lab.id}>{lab.name} ({lab.code})</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Node Access Token / Password</label>
-            <input 
-              type="password" 
-              className="form-input" 
-              placeholder="••••••••" 
-              value={loginPassword} 
-              onChange={(e) => setLoginPassword(e.target.value)} 
-              required
-            />
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-              Tip: Enter any password for sandbox access.
-            </span>
-          </div>
-
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px', fontSize: '14px', marginTop: '10px' }}>
-            Authenticate Core Node
-          </button>
-        </form>
-      </div>
-    );
-  }
 
   return (
     <div>
