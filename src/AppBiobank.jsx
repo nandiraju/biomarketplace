@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import LandingPage from './components/LandingPage';
-import ResearcherLandingPage from './components/ResearcherLandingPage';
-import ResearcherDashboard from './components/ResearcherDashboard';
+import BiobankLandingPage from './components/BiobankLandingPage';
+import BiobankLogin from './components/BiobankLogin';
+import LabILIMS from './components/LabILIMS';
 import LogisticsITracker from './components/LogisticsITracker';
 import PaymentHub from './components/PaymentHub';
 import { INITIAL_REQUESTS, INITIAL_SHIPMENTS } from './data/mockData';
 import { HelpCircle, Network, Layers, ShieldCheck, RotateCcw } from 'lucide-react';
 
-export default function App() {
-  const [role, setRole] = useState(null); // 'researcher' | null
-  const [currentView, setCurrentView] = useState('landing');
-  const [loggedInLabId, setLoggedInLabId] = useState(null); // Kept null for Researcher App
+export default function AppBiobank() {
+  const [currentView, setCurrentView] = useState('biobank_landing');
+  const [loggedInLabId, setLoggedInLabId] = useState(null);
 
-  // Sync state with localStorage to enable real-time updates with Biobank Portal
+  // Sync state with localStorage to enable real-time updates from Researcher Portal
   const [requests, setRequests] = useState(() => {
     const saved = localStorage.getItem('biomarketplace_requests');
     return saved ? JSON.parse(saved) : INITIAL_REQUESTS;
@@ -55,7 +54,7 @@ export default function App() {
     localStorage.setItem('biomarketplace_lab_earnings', JSON.stringify(labEarnings));
   }, [labEarnings]);
 
-  // Real-time synchronization event listener (triggers when local storage updates from biobank portal tab)
+  // Real-time synchronization event listener (triggers when local storage updates from researcher portal tab)
   useEffect(() => {
     const handleStorageChange = (e) => {
       try {
@@ -72,7 +71,7 @@ export default function App() {
           setLabEarnings(JSON.parse(e.newValue));
         }
       } catch (err) {
-        console.error("Storage sync error in Researcher Portal:", err);
+        console.error("Storage sync error in Biobank Portal:", err);
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -87,11 +86,11 @@ export default function App() {
       'md-anderson': 0,
       'mayo-clinic': 0
     };
-
+    
     setRequests(freshRequests);
     setShipments(freshShipments);
-    setRole(null);
-    setCurrentView('landing');
+    setLoggedInLabId(null);
+    setCurrentView('biobank_landing');
     setSandboxFunds(50000);
     setLabEarnings(freshEarnings);
 
@@ -104,54 +103,56 @@ export default function App() {
     alert("Demo reset successfully. All requests, shipments, and wallet balances have been restored to default states.");
   };
 
-  if (currentView === 'landing') {
+  // Redirect to root selection gateway if they exit
+  const handleExitToGateway = () => {
+    setLoggedInLabId(null);
+    window.location.href = './';
+  };
+
+  // Biobank landing view routing
+  if (currentView === 'biobank_landing') {
     return (
-      <LandingPage 
-        onSelectResearcher={() => {
-          setRole('researcher');
-          setCurrentView('researcher_landing');
-        }} 
-        onSelectBiobank={() => {
-          // Navigate browser directly to the separate biobank.html endpoint
-          window.location.href = 'biobank.html';
-        }} 
+      <BiobankLandingPage 
+        onStart={() => setCurrentView('lab')} 
+        onBackToGateway={handleExitToGateway} 
       />
     );
   }
 
-  if (currentView === 'researcher_landing') {
+  // Standalone full-screen node coordinator login page
+  if (!loggedInLabId) {
     return (
-      <ResearcherLandingPage 
-        onStart={() => setCurrentView('researcher')} 
-        onBackToGateway={() => {
-          setRole(null);
-          setCurrentView('landing');
-        }} 
+      <BiobankLogin 
+        onLogin={(labId) => {
+          setLoggedInLabId(labId);
+          setCurrentView('lab');
+        }}
+        onBackToGateway={handleExitToGateway}
       />
     );
   }
 
   const getHeaderDetails = () => {
     switch (currentView) {
-      case 'researcher':
+      case 'lab':
         return {
-          title: 'Researcher Cohort Portal',
-          subtitle: 'Initiate sample requests, define clinical criteria, and view direct estimates from biobanks.'
+          title: 'Biobank Partner Workspace',
+          subtitle: 'Submit price estimates for active inquiries and manage physical LIMS specimen collections.'
         };
       case 'tracker':
         return {
-          title: 'iTracker Cold-Chain Tracking Node',
+          title: 'Specimen Dispatch Control',
           subtitle: 'Real-time multi-site shipment tracker, cold-chain temperature telemetry, and delivery confirmations.'
         };
       case 'payment':
         return {
-          title: 'Direct Payment Ledger',
-          subtitle: 'Verify direct payments, check individual biobank earnings, and audit transactions.'
+          title: 'Laboratory Earnings Hub',
+          subtitle: 'Verify direct payment receipts, monitor biobank node balances, and audit transactions.'
         };
       default:
         return {
-          title: 'Sponsor Portal Workspace',
-          subtitle: 'Cohort configuration inquiries and audit logs.'
+          title: 'Biobank Core Node Workspace',
+          subtitle: 'LIMS inventory allocations and dispatch monitoring.'
         };
     }
   };
@@ -160,15 +161,15 @@ export default function App() {
 
   const renderActiveView = () => {
     switch (currentView) {
-      case 'researcher':
+      case 'lab':
         return (
-          <ResearcherDashboard 
+          <LabILIMS 
             requests={requests} 
             setRequests={setRequests} 
-            sandboxFunds={sandboxFunds} 
-            setSandboxFunds={setSandboxFunds}
-            labEarnings={labEarnings}
-            setLabEarnings={setLabEarnings}
+            shipments={shipments} 
+            setShipments={setShipments} 
+            loggedInLabId={loggedInLabId}
+            setLoggedInLabId={setLoggedInLabId}
           />
         );
       case 'tracker':
@@ -191,17 +192,19 @@ export default function App() {
         );
       default:
         return (
-          <ResearcherDashboard 
+          <LabILIMS 
             requests={requests} 
             setRequests={setRequests} 
-            sandboxFunds={sandboxFunds} 
-            setSandboxFunds={setSandboxFunds}
-            labEarnings={labEarnings}
-            setLabEarnings={setLabEarnings}
+            shipments={shipments} 
+            setShipments={setShipments} 
+            loggedInLabId={loggedInLabId}
+            setLoggedInLabId={setLoggedInLabId}
           />
         );
     }
   };
+
+  const activeLab = MOCK_LABS.find(l => l.id === loggedInLabId) || MOCK_LABS[0];
 
   return (
     <div className="app-container">
@@ -210,8 +213,8 @@ export default function App() {
         setCurrentView={setCurrentView} 
         loggedInLabId={loggedInLabId}
         setLoggedInLabId={setLoggedInLabId}
-        role="researcher"
-        setRole={setRole}
+        role="biobank"
+        setRole={handleExitToGateway} // Trigger exit redirection
       />
 
       <main className="main-content">
@@ -252,7 +255,7 @@ export default function App() {
             </button>
 
             <div className="role-switcher-banner">
-              <span>ACTIVE SYSTEM NODE</span>
+              <span>CONNECTED NODE</span>
               <div 
                 style={{ 
                   display: 'flex', 
@@ -266,14 +269,14 @@ export default function App() {
                   color: '#ffffff'
                 }}
               >
-                <Network size={12} style={{ color: 'var(--accent-teal)' }} />
-                <span>MULTISITE ACTIVE</span>
+                <Network size={12} style={{ color: activeLab.color || 'var(--accent-teal)' }} />
+                <span>{activeLab.code} NODE</span>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Info Notification Panel about the Sponsor Workflow */}
+        {/* Info Notification Panel about the Biobank Workflow */}
         <div 
           className="glass-panel" 
           style={{ 
@@ -289,7 +292,7 @@ export default function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Layers size={18} style={{ color: 'var(--accent-indigo)', flexShrink: 0 }} />
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              <strong>Sponsor Workspace Guide:</strong> Create cohort request → Review quotes received from biobanks → Accept quote and pay directly → Track dry-ice cold-chain logistics in real-time.
+              <strong>Supplier Node Guide:</strong> View pending researcher inquiries → Draft and publish price quotes → Once paid directly, match inventory barcodes → Hand parcel over to courier for transit cold-chain logging.
             </p>
           </div>
           <a 
@@ -306,14 +309,14 @@ export default function App() {
             onClick={(e) => {
               e.preventDefault();
               alert(
-                "Sponsor & Researcher Workspace Checklist:\n\n" +
-                "1. Cohort Inquiries: Define demographic and cancer criteria to publish requests.\n" +
-                "2. Price Quotes: Click 'View Estimates' on pending inquiries to compare quotes from labs, then accept and pay biobanks directly.\n" +
-                "3. Wallet Ledger: Refill your sandbox wallet card and check your transaction invoice audit history."
+                "Biobank Partner Node Checklist:\n\n" +
+                "1. Pending Inquiries: Review demographic criteria, and LIMS matching counts. Enter your estimated price and capacity notes to publish quotes.\n" +
+                "2. Active Fulfillments: Once a Researcher accepts and pays you directly, requests shift here. Select matching physical inventory barcodes, then click Allocate & Ship.\n" +
+                "3. Specimen Shipments: Dispatch carriers and check cold-chain temperature coordinates."
               );
             }}
           >
-            <HelpCircle size={14} /> Sponsor Info
+            <HelpCircle size={14} /> Node Info
           </a>
         </div>
 
