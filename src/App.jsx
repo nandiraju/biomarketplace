@@ -9,7 +9,7 @@ import LabILIMS from './components/LabILIMS';
 import LogisticsITracker from './components/LogisticsITracker';
 import PaymentHub from './components/PaymentHub';
 import { INITIAL_REQUESTS, INITIAL_SHIPMENTS } from './data/mockData';
-import { HelpCircle, Network, Layers, ShieldCheck } from 'lucide-react';
+import { HelpCircle, Network, Layers, ShieldCheck, RotateCcw } from 'lucide-react';
 
 export default function App() {
   const [role, setRole] = useState(null); // 'researcher' | 'biobank' | null
@@ -23,6 +23,21 @@ export default function App() {
     'md-anderson': 0,
     'mayo-clinic': 0
   });
+
+  const resetDemo = () => {
+    setRequests(JSON.parse(JSON.stringify(INITIAL_REQUESTS)));
+    setShipments(JSON.parse(JSON.stringify(INITIAL_SHIPMENTS)));
+    setLoggedInLabId(null);
+    setRole(null);
+    setCurrentView('landing');
+    setSandboxFunds(50000);
+    setLabEarnings({
+      'dana-farber': 12500,
+      'md-anderson': 0,
+      'mayo-clinic': 0
+    });
+    alert("Demo reset successfully. All requests, shipments, and wallet balances have been restored to their default states.");
+  };
 
   if (currentView === 'landing') {
     return (
@@ -182,6 +197,30 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <button 
+              className="btn btn-secondary" 
+              style={{ 
+                padding: '6px 12px', 
+                fontSize: '11.5px', 
+                minHeight: 'auto', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                border: '1px solid rgba(239, 68, 68, 0.25)', 
+                color: 'var(--accent-rose)',
+                background: 'rgba(239, 68, 68, 0.04)',
+                cursor: 'pointer',
+                borderRadius: '8px',
+                transition: 'all 0.2s',
+                fontWeight: '600'
+              }}
+              onClick={resetDemo}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.04)'}
+            >
+              <RotateCcw size={12} /> Reset Demo
+            </button>
+
             <div className="role-switcher-banner">
               <span>ACTIVE SYSTEM NODE</span>
               <div 
