@@ -44,6 +44,39 @@ To access LIMS inventories and submit quotes:
 - Enter any token/password for sandbox credentials (sandbox bypasses validation).
 - Once connected, the sidebar updates with your coordinator profile, and you can access the quoting and inventory workspaces.
 
+## Codebase Structure & Screen Separation
+
+To maintain strict boundaries between Sponsor/Researcher (client) and Biobank Partner (supplier) roles, all views and dashboards are decoupled into independent components:
+
+```
+src/
+├── components/
+│   ├── Unified Gateway / Landing
+│   │   ├── LandingPage.jsx             # Unified gate selector
+│   │   ├── ResearcherLandingPage.jsx   # Researcher entry gate
+│   │   └── BiobankLandingPage.jsx      # Biobank coordinator entry gate
+│   │
+│   ├── Authentication
+│   │   └── BiobankLogin.jsx            # Dedicated full-screen Node coordinator Auth
+│   │
+│   ├── Researcher-Specific Screens
+│   │   ├── ResearcherDashboard.jsx     # Cohort inquiries panel
+│   │   ├── ResearcherTracker.jsx       # Read-only shipment tracking and temperature telemetry
+│   │   └── ResearcherPaymentHub.jsx    # Sponsor wallet ledger and mockup checkout
+│   │
+│   ├── Biobank-Specific Screens
+│   │   ├── LabILIMS.jsx                # LIMS physical inventory management and quoting
+│   │   ├── BiobankTracker.jsx          # Specimen shipments carrier simulator
+│   │   └── BiobankPaymentHub.jsx       # Node earnings ledger and payout chart
+│   │
+│   └── Shared Layout
+│       └── Sidebar.jsx                 # Role-based sidebar layout
+```
+
+- **No Shared Control Overlap**: Researchers have no access to carrier simulation or shipping advance controls. Biobank partners cannot view the researcher's wallet card or trigger credit-card sandbox refills.
+- **Node-Level Isolation**: Biobanks only view shipments and payment entries associated with their logged-in node ID (`DFCI`, `MDAB`, or `MCTH`).
+- **State Synchronization**: Uses `localStorage` triggers to synchronize data in real-time if a user opens the researcher portal and the biobank portal side-by-side.
+
 ---
 
 ## Deployment to GitHub Pages

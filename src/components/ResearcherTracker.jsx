@@ -1,71 +1,13 @@
 import React, { useState } from 'react';
-import { Truck, Thermometer, MapPin, Navigation, ArrowRight, ShieldCheck, List, Table, Hash, Clipboard, FlaskConical, Activity, ArrowUpDown } from 'lucide-react';
+import { Truck, Thermometer, MapPin, Navigation, ShieldCheck, List, Table, Hash, Clipboard, FlaskConical, Activity, ArrowUpDown } from 'lucide-react';
 
-export default function LogisticsITracker({ shipments, setShipments, requests, setRequests }) {
+export default function ResearcherTracker({ shipments, requests }) {
   const [selectedShipmentId, setSelectedShipmentId] = useState(shipments[0]?.id || null);
   const [viewMode, setViewMode] = useState('table');
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState('asc');
 
   const selectedShipment = shipments.find((s) => s.id === selectedShipmentId);
-
-  const advanceShipment = (shipmentId) => {
-    const shipment = shipments.find((s) => s.id === shipmentId);
-    if (!shipment || shipment.currentStepIndex >= shipment.steps.length - 1) return;
-
-    const nextStepIndex = shipment.currentStepIndex + 1;
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-
-    const updatedSteps = shipment.steps.map((step, idx) => {
-      if (idx < nextStepIndex) {
-        return { ...step, status: 'completed', date: step.date || nowStr };
-      } else if (idx === nextStepIndex) {
-        return { ...step, status: nextStepIndex === shipment.steps.length - 1 ? 'completed' : 'current', date: nowStr };
-      } else {
-        return { ...step, status: 'pending', date: null };
-      }
-    });
-
-    // Generate random temperature reading to add to logs
-    const currentTemp = -78 - Math.random() * 3;
-    const updatedTempMonitoring = [
-      ...shipment.tempMonitoring,
-      { time: nowStr.split(' ')[1], temp: parseFloat(currentTemp.toFixed(1)) }
-    ];
-
-    // Update shipments state
-    const updatedShipments = shipments.map((s) => {
-      if (s.id === shipmentId) {
-        return {
-          ...s,
-          currentStepIndex: nextStepIndex,
-          steps: updatedSteps,
-          tempMonitoring: updatedTempMonitoring
-        };
-      }
-      return s;
-    });
-    setShipments(updatedShipments);
-
-    // If it reached "Delivered & Confirmed" (index 6), update request status
-    if (nextStepIndex === shipment.steps.length - 1) {
-      // Find request associated with this shipment
-      const request = requests.find((r) => r.id === shipment.requestId);
-      if (request) {
-        // Mark request status as 'Delivered'
-        const updatedRequests = requests.map((r) => {
-          if (r.id === request.id) {
-            return {
-              ...r,
-              status: 'Delivered'
-            };
-          }
-          return r;
-        });
-        setRequests(updatedRequests);
-      }
-    }
-  };
 
   const getLabName = (labId) => {
     switch (labId) {
@@ -103,7 +45,7 @@ export default function LogisticsITracker({ shipments, setShipments, requests, s
       bVal = b.steps[b.currentStepIndex]?.name || '';
     } else if (sortField === 'status') {
       aVal = a.currentStepIndex === a.steps.length - 1 ? 1 : 0;
-      bVal = b.currentStepIndex === b.steps.length - 1 ? 1 : 0;
+      bVal = b.steps[b.currentStepIndex]?.name || '';
     }
 
     if (typeof aVal === 'string') {
@@ -153,7 +95,7 @@ export default function LogisticsITracker({ shipments, setShipments, requests, s
         <div className="panel-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
           {shipments.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              No shipments currently registered. Fulfill a request in the iLIMS dashboard to create a shipment.
+              No shipments currently in transit for your cohort requests.
             </div>
           ) : viewMode === 'table' ? (
             <div style={{ overflowX: 'auto' }}>
@@ -275,27 +217,8 @@ export default function LogisticsITracker({ shipments, setShipments, requests, s
           </div>
 
           <div className="panel-body">
-            {/* Simulation controls */}
-            {selectedShipment.currentStepIndex < selectedShipment.steps.length - 1 ? (
-              <div style={{ 
-                background: 'rgba(79, 172, 254, 0.08)', 
-                border: '1px solid var(--border-glow)', 
-                padding: '16px', 
-                borderRadius: '12px', 
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-                <div>
-                  <strong style={{ display: 'block', fontSize: '13px', color: 'var(--text-primary)' }}>Carrier Simulation Panel</strong>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Advance shipment to next checkpoint to simulate logistics progress.</span>
-                </div>
-                <button className="btn btn-primary" onClick={() => advanceShipment(selectedShipment.id)}>
-                  Advance Status <ArrowRight size={14} />
-                </button>
-              </div>
-            ) : (
+            {/* Status indicators */}
+            {selectedShipment.currentStepIndex === selectedShipment.steps.length - 1 ? (
               <div style={{ 
                 background: 'rgba(16, 185, 129, 0.08)', 
                 border: '1px solid var(--border-emerald-glow)', 
@@ -311,6 +234,25 @@ export default function LogisticsITracker({ shipments, setShipments, requests, s
                   <strong style={{ display: 'block', fontSize: '13px', color: 'var(--accent-emerald)' }}>Shipment Fully Delivered & Confirmed</strong>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                     Sample {selectedShipment.sampleId} has reached the target site. Direct payment has been settled.
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ 
+                background: 'rgba(32, 153, 232, 0.05)', 
+                border: '1px solid var(--border-light)', 
+                padding: '16px', 
+                borderRadius: '12px', 
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <Activity size={24} style={{ color: 'var(--accent-indigo)', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ display: 'block', fontSize: '13px', color: 'var(--text-primary)' }}>Shipment in Transit (Cold-Chain Guard Active)</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    Currently at checkpoint: <span style={{ color: 'var(--accent-indigo)', fontWeight: '600' }}>{selectedShipment.steps[selectedShipment.currentStepIndex]?.name}</span>
                   </span>
                 </div>
               </div>
@@ -336,10 +278,7 @@ export default function LogisticsITracker({ shipments, setShipments, requests, s
               {/* Sparkline */}
               <div className="temp-sparkline">
                 {selectedShipment.tempMonitoring.map((log, idx) => {
-                  // Normalize temp around -85 to -75 range
-                  // Let height be percentage
                   const normTemp = Math.abs(log.temp);
-                  // Normal height between 30px and 60px
                   const barHeight = ((normTemp - 70) / 15) * 50 + 10;
 
                   return (
@@ -392,14 +331,12 @@ export default function LogisticsITracker({ shipments, setShipments, requests, s
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              {/* Fake grid lines */}
               <div style={{ position: 'absolute', top: 0, bottom: 0, left: '25%', width: '1px', background: 'rgba(255,255,255,0.02)' }}></div>
               <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: '1px', background: 'rgba(255,255,255,0.02)' }}></div>
               <div style={{ position: 'absolute', top: 0, bottom: 0, left: '75%', width: '1px', background: 'rgba(255,255,255,0.02)' }}></div>
               <div style={{ position: 'absolute', left: 0, right: 0, top: '33%', height: '1px', background: 'rgba(255,255,255,0.02)' }}></div>
               <div style={{ position: 'absolute', left: 0, right: 0, top: '66%', height: '1px', background: 'rgba(255,255,255,0.02)' }}></div>
 
-              {/* Route lines */}
               <svg style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}>
                 <path 
                   d="M 60,70 Q 150,20 280,60" 
@@ -441,7 +378,6 @@ export default function LogisticsITracker({ shipments, setShipments, requests, s
                   width: '12px', 
                   height: '12px', 
                   boxShadow: '0 0 10px var(--accent-indigo)',
-                  animation: 'pulse-dot 1.5s infinite alternate' 
                 }}></div>
               </div>
 
@@ -452,14 +388,14 @@ export default function LogisticsITracker({ shipments, setShipments, requests, s
               </div>
 
               <div style={{ position: 'absolute', bottom: '8px', right: '12px', fontSize: '9px', color: 'var(--text-muted)' }}>
-                GPS Monitoring Online
+                GPS Telemetry Online
               </div>
             </div>
           </div>
         </div>
       ) : (
         <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', color: 'var(--text-muted)' }}>
-          Select a shipment to monitor logistics timelines and temperature records.
+          Select a shipment from the list to track transit checkpoints and cold-chain logs.
         </div>
       )}
     </div>

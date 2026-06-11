@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Wallet, ShieldCheck, Landmark, CreditCard, DollarSign, List, Table, Hash, Calendar, Clipboard, Globe, Activity, ArrowUpDown } from 'lucide-react';
 
-export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, labEarnings }) {
+export default function ResearcherPaymentHub({ requests, sandboxFunds, setSandboxFunds, labEarnings }) {
   const [cardNumber, setCardNumber] = useState('');
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [viewMode, setViewMode] = useState('table');
@@ -9,11 +9,6 @@ export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, la
   const [sortDirection, setSortDirection] = useState('desc');
 
   // Math totals
-  const totalDanaFarberEarnings = labEarnings['dana-farber'] || 0;
-  const totalMdAndersonEarnings = labEarnings['md-anderson'] || 0;
-  const totalMayoClinicEarnings = labEarnings['mayo-clinic'] || 0;
-  const totalLabEarnings = totalDanaFarberEarnings + totalMdAndersonEarnings + totalMayoClinicEarnings;
-
   const totalUnpaid = requests
     .filter((r) => r.paymentStatus === 'Unpaid')
     .reduce((sum, r) => sum + r.budget, 0);
@@ -22,10 +17,13 @@ export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, la
     .filter((r) => r.paymentStatus === 'Paid')
     .reduce((sum, r) => sum + r.budget, 0);
 
-  // Generate a direct payment ledger based on requests
+  const totalDanaFarberEarnings = labEarnings['dana-farber'] || 0;
+  const totalMdAndersonEarnings = labEarnings['md-anderson'] || 0;
+  const totalMayoClinicEarnings = labEarnings['mayo-clinic'] || 0;
+  const totalLabEarnings = totalDanaFarberEarnings + totalMdAndersonEarnings + totalMayoClinicEarnings;
+
   const getLedgerEntries = () => {
     const entries = [];
-
     requests.forEach((req, idx) => {
       if (req.paymentStatus === 'Paid') {
         const labCode = req.selectedLabId === 'dana-farber' ? 'DFCI Node' : req.selectedLabId === 'md-anderson' ? 'MDAB Node' : 'MCTH Node';
@@ -50,8 +48,6 @@ export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, la
         });
       }
     });
-
-    // Sort by id descending initially
     return entries.sort((a, b) => b.id.localeCompare(a.id));
   };
 
@@ -118,7 +114,7 @@ export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, la
 
         <div className="glass-panel metric-card">
           <div className="metric-data">
-            <span className="metric-label">Biobank Earnings</span>
+            <span className="metric-label">Total Biobank Payouts</span>
             <span className="metric-value">${totalLabEarnings.toLocaleString()}</span>
           </div>
           <div className="metric-icon-box" style={{ color: 'var(--accent-emerald)' }}>
@@ -207,7 +203,7 @@ export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, la
                       <td>{entry.destination}</td>
                       <td style={{ fontWeight: '600' }}>
                         {entry.type === 'direct_payout' ? (
-                          <span style={{ color: 'var(--accent-emerald)' }}>-${entry.amount.toLocaleString()}</span>
+                          <span style={{ color: 'var(--accent-rose)' }}>-${entry.amount.toLocaleString()}</span>
                         ) : (
                           <span style={{ color: 'var(--text-muted)' }}>${entry.amount.toLocaleString()}</span>
                         )}
@@ -248,7 +244,7 @@ export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, la
                     </div>
                     <div style={{ borderTop: '1px solid var(--border-light)', marginTop: '10px', paddingTop: '8px', display: 'flex', justifyContent: 'flex-end', fontWeight: '700', fontSize: '14px' }}>
                       {entry.type === 'direct_payout' ? (
-                        <span style={{ color: 'var(--accent-emerald)' }}>-${entry.amount.toLocaleString()}</span>
+                        <span style={{ color: 'var(--accent-rose)' }}>-${entry.amount.toLocaleString()}</span>
                       ) : (
                         <span style={{ color: 'var(--text-muted)' }}>${entry.amount.toLocaleString()}</span>
                       )}
@@ -271,7 +267,7 @@ export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, la
               <div className="escrow-diagram">
                 <div className="escrow-labels">
                   <span>Marketplace Fund Split</span>
-                  <span style={{ color: 'var(--accent-emerald)' }}>
+                  <span style={{ color: 'var(--accent-indigo)' }}>
                     Total Handled: ${(totalPaid + totalUnpaid).toLocaleString()}
                   </span>
                 </div>
@@ -280,7 +276,7 @@ export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, la
                   {totalPaid > 0 && (
                     <div 
                       className="escrow-bar-fill released" 
-                      style={{ width: `${(totalPaid / (totalPaid + totalUnpaid || 1)) * 100}%` }}
+                      style={{ width: `${(totalPaid / (totalPaid + totalUnpaid || 1)) * 100}%`, background: 'var(--accent-indigo)' }}
                       title="Directly Paid to Biobanks"
                     ></div>
                   )}
@@ -295,7 +291,7 @@ export default function PaymentHub({ requests, sandboxFunds, setSandboxFunds, la
 
                 <div style={{ display: 'flex', gap: '16px', fontSize: '11px', marginTop: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '10px', height: '10px', background: 'var(--accent-emerald)', borderRadius: '2px' }}></span>
+                    <span style={{ width: '10px', height: '10px', background: 'var(--accent-indigo)', borderRadius: '2px' }}></span>
                     <span style={{ color: 'var(--text-secondary)' }}>Paid to Biobanks (${totalPaid.toLocaleString()})</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

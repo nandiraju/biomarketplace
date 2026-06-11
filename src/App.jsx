@@ -3,8 +3,8 @@ import Sidebar from './components/Sidebar';
 import LandingPage from './components/LandingPage';
 import ResearcherLandingPage from './components/ResearcherLandingPage';
 import ResearcherDashboard from './components/ResearcherDashboard';
-import LogisticsITracker from './components/LogisticsITracker';
-import PaymentHub from './components/PaymentHub';
+import ResearcherTracker from './components/ResearcherTracker';
+import ResearcherPaymentHub from './components/ResearcherPaymentHub';
 import { INITIAL_REQUESTS, INITIAL_SHIPMENTS } from './data/mockData';
 import { HelpCircle, Network, Layers, ShieldCheck, RotateCcw } from 'lucide-react';
 
@@ -173,16 +173,14 @@ export default function App() {
         );
       case 'tracker':
         return (
-          <LogisticsITracker 
+          <ResearcherTracker 
             shipments={shipments} 
-            setShipments={setShipments} 
             requests={requests} 
-            setRequests={setRequests} 
           />
         );
       case 'payment':
         return (
-          <PaymentHub 
+          <ResearcherPaymentHub 
             requests={requests} 
             sandboxFunds={sandboxFunds}
             setSandboxFunds={setSandboxFunds}

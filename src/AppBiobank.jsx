@@ -3,9 +3,9 @@ import Sidebar from './components/Sidebar';
 import BiobankLandingPage from './components/BiobankLandingPage';
 import BiobankLogin from './components/BiobankLogin';
 import LabILIMS from './components/LabILIMS';
-import LogisticsITracker from './components/LogisticsITracker';
-import PaymentHub from './components/PaymentHub';
-import { INITIAL_REQUESTS, INITIAL_SHIPMENTS } from './data/mockData';
+import BiobankTracker from './components/BiobankTracker';
+import BiobankPaymentHub from './components/BiobankPaymentHub';
+import { INITIAL_REQUESTS, INITIAL_SHIPMENTS, MOCK_LABS } from './data/mockData';
 import { HelpCircle, Network, Layers, ShieldCheck, RotateCcw } from 'lucide-react';
 
 export default function AppBiobank() {
@@ -174,20 +174,20 @@ export default function AppBiobank() {
         );
       case 'tracker':
         return (
-          <LogisticsITracker 
+          <BiobankTracker 
             shipments={shipments} 
             setShipments={setShipments} 
             requests={requests} 
             setRequests={setRequests} 
+            loggedInLabId={loggedInLabId}
           />
         );
       case 'payment':
         return (
-          <PaymentHub 
+          <BiobankPaymentHub 
             requests={requests} 
-            sandboxFunds={sandboxFunds}
-            setSandboxFunds={setSandboxFunds}
             labEarnings={labEarnings}
+            loggedInLabId={loggedInLabId}
           />
         );
       default:
